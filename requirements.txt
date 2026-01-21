@@ -6,7 +6,7 @@ transformers
 torch
 requests
 python-multipart
-python-telegram-bot
+python-telegram-bot[job-queue]
 python-dotenv
 certifi
 python-dateutil

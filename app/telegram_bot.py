@@ -356,12 +356,50 @@ async def monitor_news_job(context: ContextTypes.DEFAULT_TYPE):
     if count > 0:
         logger.info(f"Smart Monitor: Sent {count} new articles to {len(subscribers)} subscribers.")
 
+async def run_scheduler_fallback(application, interval_sec):
+    """Fallback loop if JobQueue is missing."""
+    logger.info("Starting Fallback Scheduler Loop...")
+    
+    # Wait a bit before first run
+    await asyncio.sleep(10)
+    
+    while True:
+        try:
+            # Create a mock context if needed, or just pass application.
+            # monitor_news_job expects 'context' with 'bot'. 
+            # In PTB v20+, Context is complex, but we can try to mimic it or refactor monitor_news_job.
+            # Actually, context.bot is the main requirement.
+            
+            # Simple wrapper class to mimic Context
+            class MockContext:
+                def __init__(self, app):
+                    self.bot = app.bot
+                    self.job = None
+                    self.application = app
+                    self.user_data = {}
+            
+            mock_ctx = MockContext(application)
+            
+            await monitor_news_job(mock_ctx)
+            
+        except Exception as e:
+            logger.error(f"Fallback Scheduler Error: {e}")
+        
+        await asyncio.sleep(interval_sec)
+
 # --- Main ---
 
 async def main():
     if not BOT_TOKEN:
         logger.error("❌ BOT_TOKEN не установлен!")
         return
+
+    # Check for JobQueue dependency
+    job_queue_available = True
+    try:
+        from telegram.ext import JobQueue
+    except ImportError:
+        job_queue_available = False
 
     logger.info(f"🤖 Запуск бота... Подписчиков в базе: {len(db.get_subscribers())}")
     
@@ -380,7 +418,15 @@ async def main():
     # Background Job (Interval: every X minutes)
     job_queue = application.job_queue
     interval_sec = POST_INTERVAL_MIN * 60
-    job_queue.run_repeating(monitor_news_job, interval=interval_sec, first=10)
+    
+    if job_queue:
+        logger.info(f"✅ JobQueue доступен. Запускаем периодическую задачу (интервал {interval_sec}с).")
+        job_queue.run_repeating(monitor_news_job, interval=interval_sec, first=10)
+    else:
+        logger.error("⚠️ JobQueue НЕ доступен! Установите 'python-telegram-bot[job-queue]'.")
+        logger.info(f"🔄 Включаю Fallback: asyncio loop scheduler (интервал {interval_sec}с).")
+        # Start fallback task
+        asyncio.create_task(run_scheduler_fallback(application, interval_sec))
     
     # Run
     await application.initialize()

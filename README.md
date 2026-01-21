@@ -57,6 +57,7 @@ Open a new terminal and run:
 ```bash
 python app/telegram_bot.py
 ```
+> **Render.com Note**: If deploying to Render, ensure dependencies are installed via `pip install -r requirements.txt`. The `python-telegram-bot[job-queue]` extra is required for the internal scheduler. The bot now includes a fallback to `asyncio` if this is missing, but full installation is recommended.
 
 ### 6. Usage
 **API**:
