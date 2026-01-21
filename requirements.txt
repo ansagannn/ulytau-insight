@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+feedparser
+beautifulsoup4
+transformers
+torch
+requests
+python-multipart
+python-telegram-bot
+python-dotenv
+certifi
+python-dateutil
