@@ -47,8 +47,6 @@ def fetch_news(limit: int = 40) -> List[Dict]:
     Fetches news from the local API.
     """
     try:
-    """
-    try:
         url = f"{API_URL}/news"
         response = requests.get(url, timeout=60)
         response.raise_for_status()
