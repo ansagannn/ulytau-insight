@@ -25,7 +25,7 @@ except ImportError:
 load_dotenv()
 # 2) Config
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/news")
+API_URL = os.getenv("API_URL", "https://ulytau-insight.onrender.com")
 BOT_LIMIT = int(os.getenv("BOT_LIMIT", "5"))
 POST_INTERVAL_MIN = int(os.getenv("POST_INTERVAL_MIN", "15"))
 DISABLE_PREVIEW = os.getenv("DISABLE_PREVIEW", "true").lower() == "true"
@@ -47,7 +47,10 @@ def fetch_news(limit: int = 40) -> List[Dict]:
     Fetches news from the local API.
     """
     try:
-        response = requests.get(API_URL, timeout=60)
+    """
+    try:
+        url = f"{API_URL}/news"
+        response = requests.get(url, timeout=60)
         response.raise_for_status()
         payload = response.json()
         return payload.get("data", [])[:limit]
@@ -134,18 +137,29 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔄 Проверяю API...", parse_mode=ParseMode.MARKDOWN)
+    
+    def api_health():
+        r = requests.get(f"{API_URL}/health", timeout=10)
+        r.raise_for_status()
+        return r.json() if "application/json" in r.headers.get("content-type","") else r.text
+
     try:
-        health_url = API_URL.replace("/news", "/health")
-        r = requests.get(health_url, timeout=5)
-        payload = r.json()
-        sub_count = len(db.get_subscribers())
-            
-        msg = (
-            f"✅ *API STATUS*\n"
-            f"HTTP Code: `{r.status_code}`\n"
-            f"Service: `{payload.get('service')}`\n"
-            f"Подписчиков: `{sub_count}`"
-        )
+        # User requested logic
+        payload = await asyncio.to_thread(api_health)
+        
+        # If payload is dict (expected)
+        if isinstance(payload, dict):
+             sub_count = len(db.get_subscribers())
+             msg = (
+                f"✅ *API STATUS*\n"
+                f"Service: `{payload.get('service', 'OK')}`\n"
+                f"Version: `{payload.get('version', '?')}`\n"
+                f"Подписчиков: `{sub_count}`"
+            )
+        else:
+            # Fallback if raw text
+             msg = f"✅ *API STATUS*\nResponse: `{str(payload)[:200]}`"
+
         await update.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
         await update.message.reply_text(f"❌ *API Error*:\nError: `{e}`", parse_mode=ParseMode.MARKDOWN)

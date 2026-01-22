@@ -13,7 +13,7 @@ sleep 5
 
 # Set API_URL for the bot so it knows where to find the local API
 # 127.0.0.1 is safe here because they run in the same container
-export API_URL="http://127.0.0.1:$PORT/news"
+export API_URL="http://127.0.0.1:$PORT"
 
 echo "🤖 Starting Telegram Bot connecting to $API_URL..."
 
