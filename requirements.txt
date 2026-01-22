@@ -2,8 +2,6 @@ fastapi
 uvicorn
 feedparser
 beautifulsoup4
-transformers
-torch
 requests
 python-multipart
 python-telegram-bot[job-queue]

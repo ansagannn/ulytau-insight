@@ -1,6 +1,6 @@
 # app/summarizer.py
 import logging
-from transformers import pipeline
+# from transformers import pipeline
 import warnings
 
 # Suppress warnings for clean output
